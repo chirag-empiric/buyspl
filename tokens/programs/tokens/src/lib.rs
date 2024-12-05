@@ -5,7 +5,7 @@ use spl_simplified::{
     token::{Mint, Token, TokenAccount},
 };
 
-declare_id!("7phifpRNB1C13gtdnfvCp2MbuMWe6uBDwf9crjRNcruv");
+declare_id!("4TwiwGrAFAuH2qyfuFUN2bxYkbwAMzdfsw3vpjMrPfi7");
 
 #[program]
 pub mod tokens {
