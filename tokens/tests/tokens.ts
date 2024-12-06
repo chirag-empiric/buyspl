@@ -35,9 +35,9 @@ describe("TESTING TOKEN CREATION AND MINTING", () => {
   );
 
   const payer = program.provider.publicKey;
-  const mintAmount = 100;
+  const mintAmount = 1009999;
   const TOKEN_DECIMALS = 9;
-  const TOKEN_NAME = "Test Token 1234";
+  const TOKEN_NAME = "Test Token 23249999";
   const TOKEN_SYMBOL = "SYM";
   const TOKEN_URI = ""; // You can add a valid URI if needed
   const TOKEN_TAX = 5100; // 100 = 1%
@@ -56,7 +56,7 @@ describe("TESTING TOKEN CREATION AND MINTING", () => {
     TOKEN_METADATA_PROGRAM_ID
   );
 
-  console.log("MINT iS; ", metadataAddress)
+  console.log("MINT iS; ", mintWithSeed)
 
   it("Mint Tokens with Metadata Creation", async () => {
     console.log("Minting and initializing tokens with metadata...");
@@ -94,8 +94,6 @@ describe("TESTING TOKEN CREATION AND MINTING", () => {
     assert(newInfo, "Mint should be initialized and tokens minted.");
   });
 
-
-  return;
 
   it("Transfer Tokens", async () => {
     console.log("Transferring tokens...");

@@ -30,11 +30,9 @@ const App: React.FC = () => {
   }, []);
 
   const connectWallet = async () => {
-    initializeSolanaProvider();
-    return;
     try {
-      const response = await window.solana.connect();
-      setWalletAddress(response.publicKey.toString());
+      const { userPublicKey } = await initializeSolanaProvider();
+      setWalletAddress(userPublicKey.toString());
     } catch (err) {
       setError("Failed to connect wallet");
     }
@@ -51,11 +49,13 @@ const App: React.FC = () => {
     setSuccess(null);
     setIsLoading(true);
 
+    console.log(`here for swap`);
+
     try {
       // todo
       const tokenService = new TokenServices();
 
-      tokenService.mintSplTokens();
+      tokenService.transferSplTokens();
     } catch (err: any) {
       setError("Transaction failed: " + err.message);
     } finally {

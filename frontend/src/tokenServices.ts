@@ -12,12 +12,27 @@ import {
     createAssociatedTokenAccountInstruction,
     getAccount,
     getAssociatedTokenAddressSync,
+    getOrCreateAssociatedTokenAccount
 } from '@solana/spl-token'
+import Wallet from '@project-serum/anchor/dist/cjs/nodewallet'
+import { bs58 } from '@project-serum/anchor/dist/cjs/utils/bytes'
 
 const { solana } = window
 const mintAmount = 100
 const TOKEN_DECIMALS = 9
-const TOKEN_NAME = "Test Token 1234"
+const TOKEN_NAME = "Test Token 23249999"
+
+const ownerKp = anchor.web3.Keypair.fromSecretKey(
+    Uint8Array.from([129, 66, 188, 237, 45, 153, 77, 40, 148, 67, 90, 123, 31, 246, 178, 113, 131, 162, 186, 180, 212, 186, 105, 143, 10, 56, 188, 63, 211, 56, 161, 38, 74, 45, 234, 236, 131, 169, 174, 25, 123, 33, 209, 201, 63, 95, 93, 40, 231, 90, 225, 62, 157, 204, 122, 52, 93, 138, 199, 40, 34, 136, 104, 129])
+);
+
+const myKeypair = anchor.web3.Keypair.fromSecretKey(
+    bs58.decode("Q2HfaHdcZuQXqkBGPBghNyW4mz4RwZQqJQqQpafpMyKZuWfaxe6sGgHBMFZ8oH8j6MehZxXgUgqVDryD2suyeWA")
+);
+
+
+const myWallet = new Wallet(myKeypair);
+const ownerWp = new Wallet(ownerKp);
 
 const getAssociateAccount = async (userAddress: any, tokenMintAddress: any) => {
     try {
@@ -84,7 +99,6 @@ const getAssociateAccount = async (userAddress: any, tokenMintAddress: any) => {
     }
 }
 
-
 export class UtilServices {
     constructor(connection, provider, program, payer) {
         this.connection = connection
@@ -124,11 +138,16 @@ export class UtilServices {
 
 export class TokenServices {
 
-    async mintSplTokens() {
+    async transferSplTokens() {
         let publicKey
-        const { program } = await initializeSolanaProvider();
-        const mintWithSeed = new PublicKey("EHqkzCt9TEz8W9vGr4HzwyZS1imbUyuAWgPhTgAZTszC");
+        const { program, provider } = await initializeSolanaProvider();
+        // const mintWithSeed = new PublicKey("3h3kfQPCD2kBUs8nrVN3mMDtJcbAL2bnusT8nbXbUZLK");
 
+
+        const [mintWithSeed] = anchor.web3.PublicKey.findProgramAddressSync(
+            [Buffer.from(TOKEN_NAME)],
+            program.programId
+        );
         console.log("Token name needs to be updated here")
 
         try {
@@ -140,42 +159,53 @@ export class TokenServices {
                 console.log('Phantom wallet not found')
             }
 
-            const source = await anchor.utils.token.associatedAddress({
-                mint: mintWithSeed,
-                owner: masterWallet.publicKey,
-            })
+            const source = await getOrCreateAssociatedTokenAccount(connection, masterWallet.payer, mintWithSeed, masterWallet.publicKey)
+            const destination = await getOrCreateAssociatedTokenAccount(connection, masterWallet.payer, mintWithSeed, new PublicKey(publicKey))
 
-            const destination = await anchor.utils.token.associatedAddress({
-                mint: mintWithSeed,
-                owner: new PublicKey(publicKey),
-            })
-
-            console.log(`destination is ${destination}`)
+            console.log("destination is ", destination.address)
 
             const context = {
                 mint: mintWithSeed,
-                source: source,
-                destination: destination,
-                authority: masterWallet.payer,
+                source: source.address,
+                destination: destination.address,
+                authority: new PublicKey (publicKey),
                 tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
                 systemProgram: anchor.web3.SystemProgram.programId,
                 rent: anchor.web3.SYSVAR_RENT_PUBKEY,
             };
 
-            const txHash = await program.methods
+            console.log("context", context);
+            const txn = await program.methods
                 .transferSimpleTokens(TOKEN_NAME, new anchor.BN(mintAmount * 10 ** TOKEN_DECIMALS))
                 .accounts(context)
-                .signers([masterWallet.payer])
                 .rpc();
 
-            console.log(`please wait spl token is minting...`)
+            console.log("txn", txn);
+            return;
 
-            // await this.confirmTransactions(txHash)
+            console.log(`please wait spl token is transferring...`)
 
-            console.log(`  https://explorer.solana.com/tx/${txHash}?cluster=devnet`)
+            const signedTx = await window?.solana.signAndSendTransaction(txn)
+
+            // const signedTx = await window.solana.signAndSendTransaction(serializedTx);
+
+            await provider.connection.confirmTransaction(
+                signedTx.signature,
+                'finalized',
+            )
+            console.log(`signed tx`, signedTx.signature)
+            const cnfTxn = await connection.confirmTransaction(
+                signedTx.signature,
+                'finalized',
+            )
+            console.log(`transaction confirmed`, cnfTxn)
+
+
+
+            console.log(`  https://explorer.solana.com/tx/${txn}?cluster=devnet`)
             const response = {
                 mintAddress: mintWithSeed,
-                txHash: txHash,
+                txHash: txn,
             }
             return {
                 success: true,
